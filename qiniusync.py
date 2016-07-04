@@ -17,6 +17,13 @@ access_key = ''
 secret_key = ''
 bucket_name = ''
 bucket_domain = ''
+md_url_result = "md_url.txt"
+
+
+if os.path.exists(md_url_result):
+    os.remove(md_url_result)
+os.chdir(sys.path[0])
+
 
 q = Auth(access_key, secret_key)
 bucket = BucketManager(q)
@@ -115,18 +122,38 @@ def update_file(k2f,ulist):
         # update
         upload_file(k,os.path.join(basedir,f))
 
+def get_img_url(bucket_domain,file_name):
+
+    img_url = 'http://%s/%s' % (bucket_domain,file_name)
+    # generate md_url
+    md_url = "![%s](%s)\n" % (file_name, img_url)
+
+    return md_url
+    
+def save_to_txt(bucket_domain,file_name):
+
+    url_before_save = get_img_url(bucket_domain,file_name)
+    # save md_url to txt
+    with open(md_url_result, "a") as f:
+        f.write(url_before_save)
+
+
 def upload_file(key,localfile):
-    print "upload_file:"
-    print key
+    print "upload_file:" + key
+    save_to_txt(bucket_domain,key)
     token = q.upload_token(bucket_name, key)
     mime_type = get_mime_type(localfile)
     params = {'x:a': 'a'}
     progress_handler = lambda progress, total: progress
     ret, info = qiniu.put_file(token, key, localfile, params, mime_type, progress_handler=progress_handler)
 
+
 def get_mime_type(path):
     mime_type = "text/plain"
     return mime_type
+
+
+
 
 def down_file(key,basedir="",is_private=1,expires=3600):
     if isinstance(key,unicode):
